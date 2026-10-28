@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "hereyouare",
     "corsheaders",
+    # "django_rq",
 ]
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
@@ -132,3 +134,12 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+
+# RQ_QUEUES = {
+#     "default": {"URL": os.environ.get("REDIS_URL", "redist://127.0.0.1:6379/0")},
+#     "scans": {
+#         "URL": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0"),
+#         "DEFAULT_TIMEOUT": 900,
+#     }
+# }

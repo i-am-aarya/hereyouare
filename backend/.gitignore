@@ -12,3 +12,4 @@ wheels/
 spikes/
 
 db.sqlite3
+.env

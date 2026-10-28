@@ -14,10 +14,25 @@ type Website = {
   url: string | null;
 };
 
+type LookupMeta = {
+  checked: number;
+  found: number;
+  errors: number;
+  skipped: number;
+};
+
+type LookupResponse = {
+  email: string | null;
+  username: string | null;
+  results: Website[];
+  meta: LookupMeta;
+};
+
 export default function App() {
   const [mode, setMode] = useState<"email" | "username">("email");
   const [query, setQuery] = useState("");
   const [websites, setWebsites] = useState<Website[] | null>(null);
+  const [meta, setMeta] = useState<LookupMeta | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,6 +47,7 @@ export default function App() {
     setLoading(true);
     setError("");
     setWebsites(null);
+    setMeta(null);
 
     try {
       const response = await fetch(url, {
@@ -48,9 +64,10 @@ export default function App() {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as LookupResponse;
 
       setWebsites(data.results);
+      setMeta(data.meta);
     } catch (err) {
       console.error(err);
       setError("Could not complete the search. Make sure the API is running.");
@@ -63,13 +80,14 @@ export default function App() {
     setMode(next);
     setQuery("");
     setWebsites(null);
+    setMeta(null);
     setError("");
   };
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased">
-      <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-5 pb-8 pt-12 sm:pt-20">
-        <header>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-8 pt-12 sm:pt-20">
+        <header className="mx-auto w-full max-w-lg">
           <div className="flex items-center gap-2.5">
             <span className="grid h-6 w-6 place-items-center rounded-sm bg-neutral-900 text-[11px] font-semibold text-neutral-50">
               h
@@ -87,7 +105,7 @@ export default function App() {
         </header>
 
         <main className="mt-8">
-          <div className="overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-sm">
+          <div className="mx-auto w-full max-w-lg overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-sm">
             <div className="space-y-4 p-4 sm:p-5">
               <div
                 role="group"
@@ -159,83 +177,113 @@ export default function App() {
                 </button>
               </form>
             </div>
+          </div>
 
-            {(loading || error || websites !== null) && (
-              <section aria-live="polite" className="border-t border-neutral-200">
-                <div className="flex items-center justify-between gap-4 bg-neutral-50 px-4 py-2.5 sm:px-5">
-                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-500">
-                    {loading ? "Searching" : error ? "Error" : "Results"}
+          {(loading || error || websites !== null) && (
+            <section
+              aria-live="polite"
+              className="mx-auto mt-6 w-full overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-4 bg-neutral-50 px-4 py-2.5 sm:px-5">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-500">
+                  {loading ? "Searching" : error ? "Error" : "Results"}
+                </span>
+                {!loading && !error && websites !== null && (
+                  <span className="text-xs text-neutral-500">
+                    {meta?.found ?? websites.length} found
                   </span>
-                  {!loading && !error && websites !== null && (
-                    <span className="text-xs text-neutral-500">{websites.length} found</span>
-                  )}
-                </div>
-
-                {loading && (
-                  <div className="flex items-center gap-2.5 px-4 py-5 text-sm text-neutral-500 sm:px-5">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Checking public sources…
-                  </div>
                 )}
+              </div>
 
-                {error && (
-                  <div className="flex items-start gap-2.5 px-4 py-4 sm:px-5">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
-                    <p className="text-sm leading-relaxed text-neutral-500">
-                      <span className="font-medium text-neutral-900">Search failed.</span> {error}
-                    </p>
-                  </div>
-                )}
-
-                {!loading && !error && websites?.length === 0 && (
-                  <div className="px-4 py-14 text-center sm:px-5">
-                    <div className="mx-auto grid h-9 w-9 place-items-center rounded-sm border border-neutral-200 bg-neutral-50 text-neutral-400">
-                      <Search className="h-4 w-4" />
+              {!loading && !error && meta && (
+                <dl
+                  aria-label="Lookup summary"
+                  className="grid grid-cols-4 divide-x divide-neutral-100 border-b border-neutral-200 bg-neutral-50"
+                >
+                  {[
+                    { label: "Checked", value: meta.checked },
+                    { label: "Found", value: meta.found },
+                    { label: "Errors", value: meta.errors },
+                    { label: "Skipped", value: meta.skipped },
+                  ].map((stat) => (
+                    <div key={stat.label} className="px-2 py-2.5 text-center sm:px-3">
+                      <dt className="text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+                        {stat.label}
+                      </dt>
+                      <dd className="mt-0.5 text-sm font-semibold tabular-nums text-neutral-700">
+                        {stat.value}
+                      </dd>
                     </div>
-                    <p className="mt-3 text-sm font-medium">No profiles found</p>
-                    <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-neutral-500">
-                      Nothing matched “{query}”. Try a different {mode}.
-                    </p>
-                  </div>
-                )}
+                  ))}
+                </dl>
+              )}
 
-                {!loading && !error && websites && websites.length > 0 && (
-                  <ul className="divide-y divide-neutral-100">
-                    {websites.map((w, index) => (
-                      <li key={`${w.website}-${index}`}>
-                        <a
-                          href={w.url ?? undefined}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 sm:px-5"
-                        >
+              {loading && (
+                <div className="flex items-center gap-2.5 px-4 py-5 text-sm text-neutral-500 sm:px-5">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking public sources…
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-start gap-2.5 px-4 py-4 sm:px-5">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+                  <p className="text-sm leading-relaxed text-neutral-500">
+                    <span className="font-medium text-neutral-900">Search failed.</span> {error}
+                  </p>
+                </div>
+              )}
+
+              {!loading && !error && websites?.length === 0 && (
+                <div className="px-4 py-14 text-center sm:px-5">
+                  <div className="mx-auto grid h-9 w-9 place-items-center rounded-sm border border-neutral-200 bg-neutral-50 text-neutral-400">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <p className="mt-3 text-sm font-medium">No profiles found</p>
+                  <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-neutral-500">
+                    Nothing matched “{query}”. Try a different {mode}.
+                  </p>
+                </div>
+              )}
+
+              {!loading && !error && websites && websites.length > 0 && (
+                <ul className="grid grid-cols-1 gap-2.5 p-3 sm:grid-cols-2 sm:p-4 md:grid-cols-3 lg:grid-cols-4">
+                  {websites.map((w, index) => (
+                    <li key={`${w.website}-${index}`}>
+                      <a
+                        href={w.url ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex h-full flex-col justify-between gap-4 rounded-sm border border-neutral-200 bg-white p-3 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+                      >
+                        <span className="flex items-start justify-between gap-2">
                           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-sm border border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-600">
                             {w.website.charAt(0).toUpperCase()}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-neutral-800">
-                              {w.website}
-                            </span>
-                            <span className="block truncate text-xs text-neutral-400">
-                              {w.url
-                                ? new URL(w.url).hostname.replace(/^www\./, "")
-                                : "No profile link"}
-                            </span>
-                          </span>
                           {w.url && (
-                            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-300 group-hover:text-neutral-500" />
+                            <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-300 group-hover:text-neutral-500" />
                           )}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
-          </div>
+                        </span>
+                        <span className="block min-w-0">
+                          <span className="block truncate text-sm font-medium text-neutral-800">
+                            {w.website}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-neutral-400">
+                            {w.url
+                              ? new URL(w.url).hostname.replace(/^www\./, "")
+                              : "No profile link"}
+                          </span>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
         </main>
 
-        <footer className="mt-auto pt-10">
+        <footer className="mx-auto mt-auto w-full max-w-lg pt-10">
           <p className="text-[11px] leading-relaxed text-neutral-400">
             Results are gathered from public sources and may be incomplete.
           </p>

@@ -10,7 +10,9 @@ from hereyouare.serializers import (
     ResponseSerializer,
     UsernameLookupSerializer,
 )
-from hereyouare.services import lookup_email, lookup_username
+from hereyouare.services import run_lookup
+
+# from hereyouare.services import lookup_email, lookup_username
 
 
 @api_view(["POST"])
@@ -20,11 +22,9 @@ def email_lookup(request):
 
     email = serializer.validated_data["email"]
 
-    results = asyncio.run(lookup_email(email))
+    lookup = run_lookup("email", email)
 
-    response_data = {"email": email, "results": results}
-
-    output = ResponseSerializer(response_data)
+    output = ResponseSerializer({"email": email, **lookup})
 
     return Response(data=output.data, status=status.HTTP_200_OK)
 
@@ -36,11 +36,12 @@ def username_lookup(request):
         serializer.is_valid(raise_exception=True)
 
         username = serializer.validated_data["username"]
-        results = asyncio.run(lookup_username(username))
 
-        response_data = {"username": username, "results": results}
+        lookup = run_lookup("username", username)
 
-        output = ResponseSerializer(response_data)
+        # response_data = {"username": username, "results": results}
+
+        output = ResponseSerializer({"username": username, **lookup})
 
         return Response(data=output.data, status=status.HTTP_200_OK)
     except NotImplementedError:
