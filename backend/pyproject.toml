@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "cloakbrowser>=0.6.5",
     "django>=6.1.2",
     "django-cors-headers>=4.9.0",
     "django-rq>=4.2.0",
@@ -12,5 +13,7 @@ dependencies = [
     "h8mail>=2.5.6",
     "holehe>=1.61",
     "maigret>=0.6.6",
+    "playwright>=1.64.1",
+    "python-dotenv>=1.2.4",
     "user-scanner>=1.5.2.3",
 ]
